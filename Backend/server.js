@@ -1,18 +1,27 @@
 const express = require('express');
-const app = express();
-require('dotenv').config();
-const authRoutes = require('./routes/auth');
 const cors = require('cors');
+const authRoutes = require('./routes/auth');
+const app = express();
+
+const PORT = process.env.PORT || 5000;
+
+require('dotenv').config();
 
 app.use(cors());
-app.use(express.json()); // <-- This is important!
+app.use(express.json()); 
 
 app.use('/api/auth', authRoutes);
+
+process.on('uncaughtException', (err, origin) => {
+    console.error('Uncaught Exception:', err);
+    console.error('Exception Origin:', origin);
+    process.exit(1);
+});
+
 app.get('/', (req, res) => {
-    res.send('API is running');
+    res.send("hello")
 });
   
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });

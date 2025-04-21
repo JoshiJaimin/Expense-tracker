@@ -3,59 +3,40 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
-
   try {
-    // check if user exists
-    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'User already exists' });
+    const {username , email , password} = req.body
+
+    // // check if user already exists
+    const result = await pool.query(`select username from users where username = $1`, [username])
+    console.log(result)
+    if(result.rowCount != 0){
+      return res.statkus(403).json({"message":"user already exist"})
     }
 
-    // hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // // hash password 
+    const saltRounds = 10
+    password_hash = await bcrypt.hash(password , saltRounds)
 
-    // insert user
-    const newUser = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *',
-      [name, email, hashedPassword]
-    );
+    // add user to database
+    const newUser = await pool.query(`insert into users (username , email , password_hash) values ($1 , $2 , $3) returning user_id , username`,[username , email , password_hash])
 
-    const token = jwt.sign({ id: newUser.rows[0].id }, process.env.JWT_SECRET, {
+    // jwt token
+    const token = jwt.sign({ id: newUser.rows[0].user_id }, process.env.JWT_SECRET, {
       expiresIn: '1h',
     });
+    
+    res.status(201).json({token , user : newUser.rows[0]})
 
-    res.status(201).json({ token, user: newUser.rows[0] });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+  } catch (error) {
+    console.log(`error in registerUser error : ${error}`)
+    return res.status(500).json({message : "internal server error"})
   }
 };
 
+
+
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
 
-  try {
-    const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (user.rows.length === 0) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    const validPassword = await bcrypt.compare(password, user.rows[0].password);
-    if (!validPassword) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign({ id: user.rows[0].id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
-
-    res.json({ token, user: user.rows[0] });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
 };
 
 module.exports = { registerUser, loginUser };

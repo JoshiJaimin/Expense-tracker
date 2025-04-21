@@ -7,6 +7,11 @@ const pool = new Pool({
 });
 
 // Attempt to connect once at startup
+pool.on("error", (err) => {
+  console.log("err in pool")
+  process.exit(-1)
+})
+
 pool.connect()
   .then(() => console.log('✅ Connected to PostgreSQL database'))
   .catch(err => console.error('❌ PostgreSQL connection error:', err));

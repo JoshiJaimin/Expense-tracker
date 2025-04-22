@@ -12,12 +12,6 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 
-process.on('uncaughtException', (err, origin) => {
-    console.error('Uncaught Exception:', err);
-    console.error('Exception Origin:', origin);
-    process.exit(1);
-});
-
 app.get('/', (req, res) => {
     res.send("hello")
 });

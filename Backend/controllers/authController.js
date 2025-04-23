@@ -4,41 +4,68 @@ const jwt = require('jsonwebtoken');
 
 const registerUser = async (req, res) => {
   try {
-    const {username , email , password} = req.body
+    const username = req.body.username.trim();
+    const password = req.body.password.trim();
+    const email = req.body.email.trim().toLowerCase()
 
     // // check if user already exists
-    const result = await pool.query(`select username from users where username = $1`, [username])
-    console.log(result)
-    if(result.rowCount != 0){
-      return res.statkus(403).json({"message":"user already exist"})
+    const userResult = await pool.query(`select username from users where username = $1`, [username])
+    if (userResult.rowCount != 0) {
+      return res.status(409).json({ message: "username already in use" })
+    }
+
+    const emailResult = await pool.query(`select email from users where email = $1`, [email])
+    if (emailResult.rowCount != 0) {
+      return res.status(409).json({ message: "email already in use" })
     }
 
     // // hash password 
     const saltRounds = 10
-    password_hash = await bcrypt.hash(password , saltRounds)
+    const password_hash = await bcrypt.hash(password, saltRounds)
 
     // add user to database
-    const newUser = await pool.query(`insert into users (username , email , password_hash) values ($1 , $2 , $3) returning user_id , username`,[username , email , password_hash])
+    const newUser = await pool.query(`insert into users (username , email , password_hash) values ($1 , $2 , $3) returning user_id , username`, [username, email, password_hash])
 
     // jwt token
-    const token = jwt.sign({ id: newUser.rows[0].user_id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
-    
-    res.status(201).json({token , user : newUser.rows[0]})
+    const token = jwt.sign({ id: newUser.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.status(201).json({ token, username: newUser.rows[0].username, message: "Succefully registered" })
 
   } catch (error) {
-    console.log(`error in registerUser error : ${error}`)
-    return res.status(500).json({message : "internal server error"})
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Register user error:', error);
+    }
+    return res.status(500).json({ message: "internal server error" })
   }
 };
 
-
-
 const loginUser = async (req, res) => {
- console.log(req.user_id)
-  res.send("login")
+  try {
+    const password = req.body.password.trim();
+    const email = req.body.email.toLowerCase().trim()
+    // find user using email 
+    const result = await pool.query(`select user_id , password_hash , username from users where LOWER(email) = $1`, [email])
 
+    if (result.rowCount == 0)
+      return res.status(401).json({ message: "Invalid email or password" })
+
+    //verify password
+    const password_hash = result.rows[0].password_hash
+
+    if (! await bcrypt.compare(password, password_hash)) {
+      return res.status(401).json({ message: "Invalid email or password" })
+    }
+
+    // sign jwt token
+    const token = jwt.sign({ id: result.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1h' })
+
+    res.status(200).json({ token, username: result.rows[0].username, message: "Successfully logged in" })
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Login error:', error);
+    }
+    res.status(500).json({ message: "internal server error" })
+  }
 };
 
 module.exports = { registerUser, loginUser };

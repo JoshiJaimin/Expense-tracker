@@ -24,5 +24,14 @@ body('email')
     .withMessage("email should be in valid format")
 ]
 
-module.exports = userRegisterSchema;
+const userLoginSchema = [
+body('email')
+    .notEmpty()
+    .withMessage("email field is empty"),
+body('password')
+    .notEmpty()
+    .withMessage(`password field. is empty`)
+]
+
+module.exports = {userRegisterSchema , userLoginSchema}
 

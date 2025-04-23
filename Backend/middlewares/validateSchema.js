@@ -1,6 +1,6 @@
 const {validationResult} = require('express-validator') 
 
-const validateRegisterSchema = (req , res , next) => {
+const validateSchema= (req , res , next) => {
     const error = validationResult(req);
     if(!error.isEmpty()){
         return res.status(400).json({errors: error.array()});
@@ -8,4 +8,4 @@ const validateRegisterSchema = (req , res , next) => {
     next()
 }
 
-module.exports = validateRegisterSchema
+module.exports = validateSchema

@@ -1,21 +1,20 @@
-require('dotenv').config()
 const jwt = require('jsonwebtoken')
-const JWT_SECRET = process.env.JWT_SECRET
 
 const validateToken = (req, res, next) => {
     // pass token in headers Authorization Bearer token
     try {
         const authHeader = req.headers['authorization']
         
-        if (!authHeader)
-            return res.status(400).json({ "message": "no authorization header" })
+        if (!authHeader.startsWith('Bearer '))
+            return res.status(401).json({message: "Invalid authorization format" })
 
-        token = authHeader.split(' ')[1] || authHeader
+        const token = authHeader.split(' ')[1] 
 
-        const decode = jwt.verify(token = token, JWT_SECRET)
+        const decode = jwt.verify(token , process.env.JWT_SECRET)
         
-        req.user_id = decode.id
+        req.user = decode
 
+        next()
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ "error": 'Token expired' });
@@ -25,7 +24,6 @@ const validateToken = (req, res, next) => {
         }
         return res.status(500).json({ "message": "internal server error" })
     }
-    next()
 }
 
 module.exports = validateToken

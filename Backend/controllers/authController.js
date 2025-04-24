@@ -26,10 +26,7 @@ const registerUser = async (req, res) => {
     // add user to database
     const newUser = await pool.query(`insert into users (username , email , password_hash) values ($1 , $2 , $3) returning user_id , username`, [username, email, password_hash])
 
-    // jwt token
-    const token = jwt.sign({ id: newUser.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.status(201).json({ token, username: newUser.rows[0].username, message: "Succefully registered" })
+    res.status(201).json({ username: newUser.rows[0].username, message: "Succefully registered" })
 
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
@@ -58,6 +55,12 @@ const loginUser = async (req, res) => {
 
     // sign jwt token
     const token = jwt.sign({ id: result.rows[0].user_id }, process.env.JWT_SECRET, { expiresIn: '1h' })
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Only use HTTPS in production
+        sameSite: 'strict',
+        maxAge: 3600000 // 1 hour in milliseconds
+      });
 
     res.status(200).json({ token, username: result.rows[0].username, message: "Successfully logged in" })
   } catch (error) {
@@ -68,4 +71,27 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser };
+const logoutUser = (req, res) => {
+  try {
+    // Clear the JWT token cookie
+    if (!req.cookies.token){
+      res.status(401).json({message : "no active session"})
+    }
+
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    
+    return res.status(200).json({ message: "Successfully logged out" });
+
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Logout error:', error);
+    }
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = { registerUser, loginUser , logoutUser};

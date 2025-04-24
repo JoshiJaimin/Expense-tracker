@@ -62,7 +62,7 @@ const loginUser = async (req, res) => {
         maxAge: 3600000 // 1 hour in milliseconds
       });
 
-    res.status(200).json({ token, username: result.rows[0].username, message: "Successfully logged in" })
+    res.status(200).json({ token, username: result.rows[0].username,user_id : result.rows[0].user_id, message: "Successfully logged in" })
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('Login error:', error);

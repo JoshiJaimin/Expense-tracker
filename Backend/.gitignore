@@ -1,0 +1,4 @@
+/node_modules
+
+# .env files (to avoid committing sensitive data)
+.env

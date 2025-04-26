@@ -1,4 +1,4 @@
-const { validationResult , body} = require('express-validator')
+const {body} = require('express-validator')
 
 const userRegisterSchema = [
 body('username')

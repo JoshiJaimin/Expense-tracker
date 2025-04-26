@@ -33,9 +33,6 @@ body('password')
     .withMessage(`password field. is empty`)
 ]
 
-const expenseSchema = [
-    body('amount')
-    .isFloat({ gt: 0 }).withMessage('Amount must be a number greater than 0')
-]
-module.exports = {userRegisterSchema , userLoginSchema, expenseSchema}
+
+module.exports = {userRegisterSchema , userLoginSchema}
 
